@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BookABook{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0ea5e9', // Warna biru khas perpustakaan modern
+                        secondary: '#64748b',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="font-bold text-xl text-primary flex items-center gap-2">
+                <i class="fa-solid fa-book-open"></i> BookABook
+            </div>
+            <div>
+                {% if user.is_authenticated %}
+                    <span class="text-sm font-medium mr-4">Halo, {{ user.username }}</span>
+                    <a href="#" class="text-sm text-red-600 hover:text-red-800">Logout</a>
+                {% else %}
+                    <a href="#" class="text-sm text-primary hover:underline">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+    </script>
+</body>
+</html>
