@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register an Account - BookABook{% endblock %}
+
+{% block content %}
+<div class="min-h-[75vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden">
+        
+        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-green-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-teal-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+
+        <div class="relative z-10">
+            <div class="text-center mb-8">
+                <div class="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-green-200 mb-4 transform rotate-6">
+                    <i class="fa-solid fa-user-plus -rotate-6"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create a New Account</h2>
+                <p class="text-slate-500 mt-2 text-sm">Join us to start borrowing your favorite books.</p>
+            </div>
+
+            <form method="POST" action="" class="space-y-6">
+                {% csrf_token %}
+                
+                {{ form|crispy }} 
+                
+                <button type="submit" class="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 mt-6 group">
+                    Create Account
+                    <i class="fa-solid fa-check ml-2 group-hover:scale-110 transition-transform"></i>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-slate-500">
+                <p>Already have an account? <a href="{% url 'library:login' %}" class="font-medium text-green-600 hover:text-green-700 transition-colors">Log in here</a></p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} - BookABook{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    
+    <a href="{% url 'library:index' %}" class="inline-flex items-center text-slate-500 hover:text-primary mb-8 transition-colors font-medium">
+        <i class="fa-solid fa-arrow-left mr-2"></i> Back to Home
+    </a>
+
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+        <div class="md:flex">
+            
+            <div class="md:w-1/3 bg-slate-50 p-8 flex justify-center items-start border-r border-slate-100">
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image.url }}" alt="{{ book.title }}" class="w-full max-w-sm rounded-xl shadow-lg object-cover aspect-[2/3] hover:scale-105 transition-transform duration-300">
+                {% else %}
+                    <div class="w-full max-w-sm rounded-xl shadow-md bg-slate-200 aspect-[2/3] flex flex-col items-center justify-center text-slate-400">
+                        <i class="fa-solid fa-book text-6xl mb-4"></i>
+                        <span class="text-sm font-medium">Cover Unavailable</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="md:w-2/3 p-8 md:p-12 flex flex-col">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <span class="px-3 py-1 bg-blue-50 text-primary text-xs font-bold rounded-full tracking-wider uppercase">
+                        {{ book.category.name }}
+                    </span>
+                    
+                    <span class="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-full flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span> Available
+                    </span>
+                </div>
+
+                <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">{{ book.title }}</h1>
+                <p class="text-lg text-slate-500 mb-6 flex items-center">
+                    <i class="fa-solid fa-pen-nib mr-2"></i> By <span class="font-bold text-slate-700 ml-1">{{ book.author }}</span>
+                </p>
+
+                <hr class="border-slate-100 mb-6">
+
+                <div class="flex-1 mb-8">
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Synopsis</h3>
+                    <p class="text-slate-600 leading-relaxed text-justify">
+                        {{ book.synopsis|default:"Belum ada sinopsis untuk buku ini."|linebreaks }}
+                    </p>
+                </div>
+                <div class="bg-slate-50 rounded-2xl p-6 mb-4 border border-slate-100">
+                    <h4 class="text-sm font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">
+                        <i class="fa-solid fa-book-open-reader text-primary mr-2"></i> Publication Info
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Year</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.publication_year|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Publisher</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.publisher|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Place</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.publication_place|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">ISBN</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.isbn|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
+                    <h4 class="text-sm font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">
+                        <i class="fa-solid fa-ruler-combined text-primary mr-2"></i> Physical Details
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Pages</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.page_count|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Edition</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.edition|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Dimensions</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.dimensions|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Material</p>
+                            <p class="text-sm font-bold text-slate-700">{{ book.cover_material|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto">
+                    {% if user.is_authenticated %}
+                        <form action="#" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full flex justify-center items-center py-4 px-6 rounded-xl text-lg font-bold text-white bg-primary hover:bg-blue-600 focus:ring-4 focus:ring-blue-200 transition-all shadow-lg shadow-blue-500/30 group">
+                                <i class="fa-solid fa-hand-holding-hand mr-3 group-hover:scale-125 transition-transform"></i> 
+                                Borrow This Book Now
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'library:login' %}" class="w-full flex justify-center items-center py-4 px-6 rounded-xl text-lg font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all border border-slate-200">
+                            <i class="fa-solid fa-lock mr-3"></i> Login to Borrow
+                        </a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

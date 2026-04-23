@@ -60,6 +60,7 @@ class Book(models.Model):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
     isbn = models.CharField(max_length=20, unique=True)
+    synopsis = models.TextField(blank=True, null=True)
     publisher = models.CharField(max_length=255)
     publication_year = models.IntegerField()
     publication_place = models.CharField(max_length=255, blank=True, null=True)

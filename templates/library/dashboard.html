@@ -1,0 +1,9 @@
+{% extends 'base_dashboard.html' %}
+
+{% block content %}
+    <div hx-get="{% url 'library:dash_home' %}" hx-trigger="load">
+        <div class="flex justify-center items-center h-64">
+            <p class="text-slate-400 animate-pulse">Memuat data statistik...</p>
+        </div>
+    </div>
+{% endblock %}

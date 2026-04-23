@@ -1,3 +1,13 @@
 # media files
 /media
 /media/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+env/
+venv/

@@ -40,6 +40,10 @@ INSTALLED_APPS = [
 
     # Custom Apps
     'applications.library', # <--- Daftarkan di sini
+
+    # Crispy Forms & Tailwind
+    'crispy_forms',
+    'crispy_tailwind',
 ]
 
 MIDDLEWARE = [
@@ -94,6 +98,11 @@ DATABASES = {
 # Custom User Model
 AUTH_USER_MODEL = 'library.User'
 
+AUTHENTICATION_BACKENDS = [
+    'applications.library.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -136,3 +145,9 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_URL = 'library:login'
+LOGIN_REDIRECT_URL = 'library:dashboard'
+LOGOUT_REDIRECT_URL = 'library:login'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
