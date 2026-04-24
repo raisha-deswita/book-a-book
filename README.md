@@ -39,7 +39,7 @@ Secure system with distinct privileges for different user types:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/bookabook-system.git](https://github.com/yourusername/bookabook-system.git)
+   git clone https://github.com/raisha-deswita/book-a-book.git
    cd bookabook-system
 
 2. **Create and activate a virtual environment:**
