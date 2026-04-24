@@ -8,14 +8,17 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+import uuid
 User = get_user_model()
 
+import csv
+from django.http import HttpResponse
+from django.utils.timezone import now
 from django.db.models import Q
 
 # CRUD management user (superuser/admin only)
 @login_required(login_url='library:login')
 def user_management(request):
-    # 🛡️ PROTEKSI: CUMA SUPERUSER YANG BOLEH MASUK!
     if not request.user.is_superuser:
         messages.error(request, "Akses Ilegal! Anda bukan Admin.")
         return redirect('library:dash_home')
@@ -142,9 +145,7 @@ def index(request):
         'categories': Category.objects.all(),
     }
 
-    # 🌟 3. MAGIC HTMX: Kalau yang nge-request adalah ketikan Live Search
     if request.headers.get('HX-Request'):
-        # Balikin POTONGAN grid bukunya aja, jangan satu halaman full!
         return render(request, 'library/partials/book_grid.html', context)
 
     # 4. Kalau request biasa (pertama kali buka web)
@@ -156,7 +157,6 @@ def registration(request):
         return redirect('library:dashboard')
 
     if request.method == 'POST':
-        # 2. GUNAKAN FORM BARU DI SINI
         form = CustomRegisterForm(request.POST) 
         if form.is_valid():
             user = form.save(commit=False)
@@ -168,7 +168,6 @@ def registration(request):
             pengirim = 'no-reply@bookabook.com'
             penerima = [user.email]
             
-            # Tembak emailnya!
             send_mail(subject, message, pengirim, penerima)
 
             return redirect('library:login')
@@ -185,16 +184,14 @@ def dashboard(request):
 
 @login_required(login_url='library:login')
 def dash_home(request):
-    # 🌟 1. HITUNG STATISTIK GLOBAL
+
     total_books = Book.objects.count()
     total_categories = Category.objects.count()
     total_borrowed = Borrowing.objects.filter(status='active').count()
     total_students = User.objects.filter(role='student').count()
 
-    # 🌟 2. TARIK 3 BUKU TERBARU (Untuk Widget 'Recent Additions')
     recent_additions = Book.objects.order_by('-created_at')[:3]
 
-    # 🌟 3. TARIK DATA TRANSAKSI (Sesuai Hak Akses)
     if request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'librarian':
         # Kalau Admin/Librarian: Lihat semua antrean
         pending_loans = Borrowing.objects.filter(status='pending').order_by('borrow_date')
@@ -204,7 +201,6 @@ def dash_home(request):
         pending_loans = Borrowing.objects.filter(user=request.user, status='pending').order_by('borrow_date')
         active_loans = Borrowing.objects.filter(user=request.user, status='active').order_by('due_date')
 
-    # 🌟 4. BUNGKUS SEMUA KE CONTEXT
     context = {
         'total_books': total_books,
         'total_categories': total_categories,
@@ -252,17 +248,14 @@ def request_borrow(request, book_id):
             messages.error(request, "Sorry, all copies of this book are currently unavailable.")
             return redirect('library:book_detail', book_id=book.id)
             
-        # 🌟 1. TANGKAP TIPE PEMINJAMAN DARI MODAL HTML
         loan_type = request.POST.get('loan_type', 'reguler')
         
-        # 🌟 2. TARIK ATURAN DINAMIS DARI KATEGORI BUKU
         kategori_buku = book.category
         jatah_hari = kategori_buku.loan_duration_days
         tarif_denda = kategori_buku.fine_per_day
         
         tanggal_sekarang = timezone.now()
         
-        # 🌟 3. LOGIKA DUE DATE PINTAR (KBM vs REGULER)
         if loan_type == 'kbm':
             # Balik hari ini juga jam 23:59:59
             due_date = tanggal_sekarang.replace(hour=23, minute=59, second=59)
@@ -270,22 +263,21 @@ def request_borrow(request, book_id):
             # Sesuai aturan kategori (misal: Novel 7 hari, Buku Paket 14 hari)
             due_date = tanggal_sekarang + timedelta(days=jatah_hari)
         
-        # 🌟 4. SIMPAN KE DATABASE (Jangan lupa fine_snapshot!)
         Borrowing.objects.create(
             user=request.user,
             book_item=available_item,
             borrow_date=tanggal_sekarang,
             due_date=due_date,
             status='pending',
-            fine_snapshot=tarif_denda  # <--- CRITICAL: Biar dendanya kekunci!
+            fine_snapshot=tarif_denda
         )
         
         available_item.status = 'maintenance'
         available_item.save()
         
         messages.success(request, f"Borrowing request submitted! Please wait for approval from the librarian.")
-        # Note: Boleh ganti redirect ke 'library:dashboard' kalau user-nya student, biar dia nggak bingung.
-        return redirect('library:dashboard')
+        
+        return redirect('library:inventory_management')
     if request.method == 'POST':
         book = get_object_or_404(Book, id=book_id)
         
@@ -385,13 +377,11 @@ def return_book(request, borrowing_id):
 def loan_management(request):
     query = request.GET.get('q')
     
-    # 🌟 1. TARIK DATA DASAR BERDASARKAN ROLE
     if request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'librarian':
         base_loans = Borrowing.objects.all()
     else:
         base_loans = Borrowing.objects.filter(user=request.user)
         
-    # 🌟 2. TIMPA DENGAN FILTER PENCARIAN (Kalau ada ketikan)
     if query:
         loans = base_loans.filter(
             Q(user__username__icontains=query) | 
@@ -405,7 +395,6 @@ def loan_management(request):
         'loans': loans,
     }
 
-    # 🌟 3. LOGIKA RENDER (Sama kayak sebelumnya)
     if request.headers.get('HX-Request'):
         return render(request, 'library/partials/loan_management.html', context)
     else:
@@ -415,7 +404,6 @@ def loan_management(request):
 def dashboard_book_list(request):
     query = request.GET.get('q')
     
-    # 🌟 LOGIKA LIVE SEARCH
     if query:
         books = Book.objects.filter(
             Q(title__icontains=query) | 
@@ -426,12 +414,10 @@ def dashboard_book_list(request):
         books = Book.objects.all().order_by('-created_at')
         
     context = {'books': books}
-    
-    # Tetap pakai logika Interceptor yang udah kita benerin tadi
+
     if request.headers.get('HX-Request'):
         return render(request, 'library/partials/book_list_dashboard.html', context)
     else:
-        # (Sesuaikan dengan nama file wrapper utama dashboard kamu)
         return render(request, 'library/inventory_full.html', context)
     
 # fine management
@@ -442,10 +428,8 @@ def fine_management(request):
     
     query = request.GET.get('q')
     
-    # 🌟 1. TARIK SEMUA DATA YANG ADA DENDANYA (Lunas & Belum Lunas)
     base_fines = ReturnRecord.objects.exclude(fine_status='not_applicable')
     
-    # 🌟 2. LOGIKA LIVE SEARCH
     if query:
         fines = base_fines.filter(
             Q(borrowing__user__username__icontains=query) |
@@ -455,7 +439,6 @@ def fine_management(request):
     else:
         fines = base_fines.order_by('-return_date')
     
-    # Namanya aku ganti jadi 'fines' aja biar universal (karena isinya gabungan)
     context = {
         'fines': fines,
     }
@@ -468,14 +451,11 @@ def fine_management(request):
 @login_required(login_url='library:login')
 def pay_fine(request, record_id):
     if request.method == 'POST':
-        # Cari data dendanya
         record = get_object_or_404(ReturnRecord, id=record_id)
         
-        # Ubah status jadi LUNAS!
         record.fine_status = 'paid'
         record.save()
         
-        # Kembali ke halaman kasir
         return redirect('library:fine_management')
     
 # Inventarisasi Buku (CRUD)
@@ -568,34 +548,31 @@ def book_delete(request, book_id):
     if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'librarian'):
         messages.error(request, "Akses Ilegal! Anda bukan Pustakawan.")
         return redirect('library:dash_home')
-    # Gunakan POST untuk hapus data (Security Best Practice)
+    # Gunakan POST untuk hapus data 
     if request.method == 'POST':
         book = get_object_or_404(Book, id=book_id)
         title = book.title
         book.delete()
         messages.warning(request, f"Buku '{title}' telah dihapus.")
     
-    # FIX: Redirect ke Nama URL
     return redirect('library:inventory_management')
 
 # applications/library/views.py
 
 @login_required(login_url='library:login')
 def inventory_management(request):
-    # Pastikan nama fungsinya EXACTLY 'inventory_management' (huruf kecil semua)
     books = Book.objects.all().order_by('-id')
     
     context = {
         'books': books,
     }
 
-    # Cek apakah ini permintaan HTMX
     if request.headers.get('HX-Request'):
-        # Manggil file partial yang berisi kartu-kartu buku
         return render(request, 'library/partials/book_list_dashboard.html', context)
     else:
-        # Manggil file wrapper full
         return render(request, 'library/inventory_full.html', context)
+
+# CRUD Kategori Buku (Category)
     
 @login_required(login_url='library:login')
 def category_management(request):
@@ -651,8 +628,6 @@ def category_delete(request, cat_id):
     if request.method == 'POST':
         category = get_object_or_404(Category, id=cat_id)
         name = category.name
-        # Note: Karena di models.py kamu pakai on_delete=models.RESTRICT, 
-        # ini bakal error kalau ada buku yang pake kategori ini. Itu bagus! (Mencegah data yatim piatu).
         try:
             category.delete()
             messages.warning(request, f"Kategori '{name}' dihapus.")
@@ -661,9 +636,10 @@ def category_delete(request, cat_id):
             
     return redirect('library:category_management')
 
+# CRUD Buku Fisik (BookItem)
+
 @login_required(login_url='library:login')
 def book_items_manage(request, book_id):
-    # 🛡️ Satpam Lapis Kedua
     if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'librarian'):
         return redirect('library:dash_home')
 
@@ -676,7 +652,9 @@ def book_items_manage(request, book_id):
         status = request.POST.get('status', 'available')
         location = request.POST.get('location')
 
-        # 🌟 FITUR DEWA: Cek biar Barcode nggak bentrok!
+        if not book_code or book_code.strip() == '':
+            book_code = f"BC-{book.id}-{uuid.uuid4().hex[:6].upper()}"
+
         if BookItem.objects.filter(book_code=book_code).exists():
             messages.error(request, f"Gagal! Barcode '{book_code}' sudah dipakai di buku lain.")
         else:
@@ -706,7 +684,6 @@ def book_item_edit(request, item_id):
     if request.method == 'POST':
         new_code = request.POST.get('book_code')
         
-        # Cek bentrok barcode kalau barcode-nya diubah
         if new_code != item.book_code and BookItem.objects.filter(book_code=new_code).exists():
             messages.error(request, f"Gagal! Barcode '{new_code}' sudah terdaftar.")
         else:
@@ -732,3 +709,36 @@ def book_item_delete(request, item_id):
         item.delete()
         messages.warning(request, f"Buku fisik '{code}' telah dihapus dari sistem.")
         return redirect('library:book_items_manage', book_id=book_id)
+
+# Laporan CSV
+    
+@login_required(login_url='library:login')
+def export_loans_csv(request):
+    # Pastikan cuma admin/pustakawan yang bisa download
+    if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'librarian'):
+        return redirect('library:dash_home')
+
+    # Bikin response khusus buat download file
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="Laporan_Peminjaman_{now().strftime("%Y%m%d")}.csv"'
+
+    writer = csv.writer(response)
+    
+    # Bikin Header Kolom di Excel
+    writer.writerow(['Borrower', 'Book Title', 'Barcode', 'Borrow Date', 'Due Date', 'Status'])
+
+    # Tarik semua data transaksi
+    loans = Borrowing.objects.all().order_by('-borrow_date')
+    
+    # Looping data masukin ke baris Excel
+    for loan in loans:
+        writer.writerow([
+            loan.user.username,
+            loan.book_item.book.title,
+            loan.book_item.book_code,
+            loan.borrow_date.strftime("%d-%m-%Y") if loan.borrow_date else "-",
+            loan.due_date.strftime("%d-%m-%Y") if loan.due_date else "-",
+            loan.get_status_display().upper() # Ambil nama statusnya (bukan kodenya)
+        ])
+
+    return response

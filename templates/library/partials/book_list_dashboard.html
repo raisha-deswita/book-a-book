@@ -36,9 +36,15 @@
 
     <div id="inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {% for book in books %}
+
             <div class="group bg-white rounded-[1rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden relative">
                 {% if user.is_superuser or user.is_staff or user.role == 'librarian' %}
                     <div class="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                        
+                        <a href="{% url 'library:book_items_manage' book.id %}" data-hx-boost="false" class="w-10 h-10 bg-slate-900/90 backdrop-blur text-white hover:bg-primary rounded-xl flex items-center justify-center shadow-lg transition-colors group/btn relative">
+                            <i class="fa-solid fa-barcode"></i>
+                        </a>
+                        
                         <a href="{% url 'library:book_edit' book.id %}" data-hx-boost="false" class="w-10 h-10 bg-white/90 backdrop-blur text-slate-600 hover:bg-primary hover:text-white rounded-xl flex items-center justify-center shadow-lg transition-colors">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </a>

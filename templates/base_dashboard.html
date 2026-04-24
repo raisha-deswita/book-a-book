@@ -15,30 +15,33 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body class="bg-slate-50 font-sans antialiased flex h-screen overflow-hidden">
+<body class="bg-slate-50 font-sans antialiased flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
 
-    <aside class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex shadow-2xl z-20 relative">
-        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+    <div x-show="sidebarOpen" 
+         x-transition.opacity 
+         @click="sidebarOpen = false" 
+         class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm md:hidden">
+    </div>
+
+    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
+       class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 shadow-2xl">
+        <div class="h-16 flex justify-between items-center px-6 border-b border-slate-800">
             <a href="{% url 'library:index' %}" class="font-bold text-xl text-white flex items-center gap-2 hover:text-primary transition-colors">
                 <i class="fa-solid fa-book-open text-primary"></i> BookABook
             </a>
+            <button @click="sidebarOpen = false" class="md:hidden text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
 
         <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
             <p class="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-4">Library Menu</p>
-            
-            <a href="#" 
-            hx-get="{% url 'library:dash_home' %}" 
-            hx-target="#dashboard-content" 
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
-                <i class="fa-solid fa-chart-pie w-5 text-center group-hover:text-primary transition-colors"></i> 
-                <span class="font-medium">Summary</span>
-            </a>
 
             <a href="#" 
             hx-get="{% url 'library:dash_book_list' %}" 
             hx-target="#dashboard-content" 
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+            @click="sidebarOpen = false">
                 <i class="fa-solid fa-magnifying-glass w-5 text-center group-hover:text-primary transition-colors"></i> 
                 <span class="font-medium">Explore Books</span>
             </a>
@@ -48,14 +51,16 @@
                 hx-get="{% url 'library:inventory_management' %}" 
                 hx-target="#dashboard-content" 
                 hx-push-url="true"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+                @click="sidebarOpen = false">
                     <i class="fa-solid fa-book w-5 text-center group-hover:text-primary transition-colors"></i> 
                     <span class="font-medium">Inventory (Books)</span>
                 </a>
             {% endif %}
 
             {% if user.is_superuser or user.is_staff or user.role == 'librarian' %}
-                <a href="{% url 'library:category_management' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+                <a href="{% url 'library:category_management' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+                @click="sidebarOpen = false">
                     <i class="fa-solid fa-tags w-5 text-center group-hover:text-primary transition-colors"></i> 
                     <span class="font-medium">Category Rules</span>
                 </a>
@@ -65,7 +70,8 @@
             hx-get="{% url 'library:loan_management' %}" 
             hx-target="#dashboard-content"
             hx-push-url="true"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+            @click="sidebarOpen = false">
                 <i class="fa-solid fa-hand-holding-hand w-5 text-center group-hover:text-primary transition-colors"></i> 
                 <span class="font-medium">
                     {% if user.is_superuser or user.is_staff or user.role == 'librarian' %} 
@@ -81,7 +87,8 @@
                 hx-get="{% url 'library:fine_management' %}" 
                 hx-target="#dashboard-content" 
                 hx-push-url="true" 
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+                @click="sidebarOpen = false">
                     <i class="fa-solid fa-wallet w-5 text-center group-hover:text-red-400 transition-colors"></i> 
                     <span class="font-medium">Fine Management</span>
                 </a>
@@ -91,7 +98,8 @@
             <p class="px-3 text-xs font-bold text-red-500/80 uppercase tracking-wider mb-2 mt-6">Administration</p>
 
             <a href="{% url 'library:user_management' %}" 
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all group"
+            @click="sidebarOpen = false">
                 <i class="fa-solid fa-users-gear w-5 text-center group-hover:text-primary transition-colors"></i> 
                 <span class="font-medium">Manage Accounts</span>
             </a>
@@ -118,10 +126,15 @@
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
         
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shadow-sm">
-            <h2 class="text-xl font-bold text-slate-800" id="page-title">Dashboard</h2>
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 z-10 shadow-sm">
+            <div class="flex items-center gap-4">
+                <button @click="sidebarOpen = true" class="md:hidden text-slate-500 hover:text-primary transition-colors">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <h2 class="text-xl font-bold text-slate-800 truncate" id="page-title">Dashboard</h2>
+            </div>
             
-            <div class="text-sm text-slate-500 font-medium hidden md:block">
+            <div class="text-sm text-slate-500 font-medium hidden sm:block">
                 Sistem Manajemen Perpustakaan
             </div>
         </header>

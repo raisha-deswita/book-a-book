@@ -50,4 +50,7 @@ urlpatterns = [
 
     # Management
     path('dashboard/loans/', views.loan_management, name='loan_management'),
+
+    # Export CSV
+    path('dashboard/loans/export/', views.export_loans_csv, name='export_loans'),
 ]

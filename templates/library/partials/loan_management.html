@@ -20,9 +20,9 @@
                 </div>
             </div>
 
-            <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all flex items-center justify-center whitespace-nowrap">
+            <a href="{% url 'library:export_loans' %}" data-hx-boost="false" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all flex items-center justify-center whitespace-nowrap shadow-sm">
                 <i class="fa-solid fa-download mr-2"></i> Export Report
-            </button>
+            </a>
         </div>
     </div>
 
@@ -106,9 +106,9 @@
                                                     
                                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Book Condition</label>
                                                     <select name="condition" class="w-full text-sm border-slate-200 rounded-xl bg-white focus:ring-primary focus:border-primary">
-                                                        <option value="good">🟢 Good (Aman)</option>
-                                                        <option value="damaged">🟠 Damaged (Rusak)</option>
-                                                        <option value="lost">🔴 Lost (Hilang)</option>
+                                                        <option value="good">Good (Aman)</option>
+                                                        <option value="damaged">Damaged (Rusak)</option>
+                                                        <option value="lost">Lost (Hilang)</option>
                                                     </select>
                                                 </div>
 

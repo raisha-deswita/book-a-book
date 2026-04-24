@@ -1,0 +1,109 @@
+{% extends 'base_dashboard.html' %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <a href="{% url 'library:dash_book_list' %}" class="w-10 h-10 bg-slate-100 text-slate-500 hover:bg-primary hover:text-white rounded-xl flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="text-2xl font-black text-slate-800">Manage Physical Copies</h2>
+            <p class="text-slate-500 text-sm font-medium">Master Book: <span class="text-primary">{{ book.title }}</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-1 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm h-fit">
+            <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3"><i class="fa-solid fa-plus-circle text-primary mr-2"></i>Add New Copy</h3>
+            
+            <form action="{% url 'library:book_items_manage' book.id %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Barcode / Book Code</label>
+                    <input type="text" name="book_code" placeholder="Leave empty for auto-generate" class="w-full text-sm border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-primary px-4 py-2.5">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Condition</label>
+                        <select name="condition" class="w-full text-sm border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-primary px-3 py-2">
+                            <option value="good">Good</option>
+                            <option value="slightly_damaged">Slight Damage</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                        <select name="status" class="w-full text-sm border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-primary px-3 py-2">
+                            <option value="available">Available</option>
+                            <option value="borrowed">Borrowed</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Location (Rak/Lemari)</label>
+                    <input type="text" name="location" placeholder="e.g. Rak A3" class="w-full text-sm border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-primary px-4 py-2.5">
+                </div>
+
+                <button type="submit" class="w-full bg-slate-900 hover:bg-primary text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all mt-2">
+                    Save New Copy
+                </button>
+            </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked text-primary mr-2"></i>Registered Copies ({{ items.count }})</h3>
+            </div>
+            
+            <div class="overflow-x-auto p-4">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                        <tr>
+                            <th class="px-4 py-3 rounded-l-lg">Barcode</th>
+                            <th class="px-4 py-3">Condition</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        {% for item in items %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3">
+                                <span class="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">{{ item.book_code }}</span>
+                                <p class="text-[10px] text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> {{ item.location|default:"No Location" }}</p>
+                            </td>
+                            <td class="px-4 py-3 text-xs font-bold capitalize"> {{ item.get_condition_display }} </td>
+                            <td class="px-4 py-3">
+                                {% if item.status == 'available' %}
+                                    <span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded uppercase">Available</span>
+                                {% elif item.status == 'borrowed' %}
+                                    <span class="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded uppercase">Borrowed</span>
+                                {% else %}
+                                    <span class="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-black rounded uppercase">Maintenance</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <form action="{% url 'library:book_item_delete' item.id %}" method="POST" onsubmit="return confirm('Yakin hapus fisik buku ini?')" class="inline-block">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-7 h-7 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="py-10 text-center text-slate-400 text-sm">Belum ada fisik buku yang didaftarkan.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
