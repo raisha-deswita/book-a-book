@@ -1,0 +1,94 @@
+<div class="space-y-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-2 h-8 bg-primary rounded-full"></div>
+                <h2 class="text-3xl font-black text-slate-800 tracking-tighter">Book Inventory</h2>
+            </div>
+            {% if user.is_superuser or user.is_staff or user.role == 'librarian' %}
+                <p class="text-slate-500 text-sm ml-5">Manage and monitor your library's physical assets.</p>
+            {% else %}
+                <p class="text-slate-500 text-sm ml-5">Explore, find, and borrow your favorite books from our collection.</p>
+            {% endif %}
+        </div>
+
+        <div class="relative w-full lg:w-96 group">
+            <input type="text" name="q" 
+                hx-get="{% url 'library:dash_book_list' %}" 
+                hx-trigger="keyup changed delay:500ms" 
+                hx-target="#inventory-grid" 
+                hx-select="#inventory-grid" 
+                hx-swap="outerHTML" 
+                placeholder="Search title, author, or category..." 
+                class="w-full bg-slate-50 border-2 border-slate-100 text-slate-900 font-bold rounded-2xl focus:bg-white focus:ring-0 focus:border-primary block pl-12 p-3.5 transition-all shadow-inner">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-primary transition-colors"></i>
+            </div>
+        </div>
+        
+        {% if user.is_superuser or user.is_staff or user.role == 'librarian' %}
+            <a href="{% url 'library:book_add' %}" data-hx-boost="false" class="group bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all flex items-center gap-3">
+                <i class="fa-solid fa-plus group-hover:rotate-90 transition-transform"></i>
+                <span>Add New Book</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <div id="inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {% for book in books %}
+            <div class="group bg-white rounded-[1rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden relative">
+                {% if user.is_superuser or user.is_staff or user.role == 'librarian' %}
+                    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                        <a href="{% url 'library:book_edit' book.id %}" data-hx-boost="false" class="w-10 h-10 bg-white/90 backdrop-blur text-slate-600 hover:bg-primary hover:text-white rounded-xl flex items-center justify-center shadow-lg transition-colors">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <form action="{% url 'library:book_delete' book.id %}" method="POST" onsubmit="return confirm('Yakin mau hapus buku ini? Semua data fisiknya akan ikut hilang!')" data-hx-boost="false">
+                            {% csrf_token %}
+                            <button type="submit" class="w-10 h-10 bg-white/90 backdrop-blur text-red-500 hover:bg-red-500 hover:text-white rounded-xl flex items-center justify-center shadow-lg transition-colors">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+
+            <div class="aspect-[3/4] bg-slate-100 relative overflow-hidden">
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image.url }}" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                        <i class="fa-solid fa-book-open text-5xl mb-2"></i>
+                        <span class="text-[10px] font-black uppercase italic">No Cover Available</span>
+                    </div>
+                {% endif %}
+                
+                <div class="absolute bottom-4 left-4">
+                    <span class="px-3 py-1.5 bg-slate-900/80 backdrop-blur text-white text-[10px] font-black rounded-lg uppercase tracking-widest border border-white/20">
+                        {{ book.available_stock }} Copies
+                    </span>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                    <p class="text-[10px] font-black text-primary uppercase tracking-widest">{{ book.category.name }}</p>
+                </div>
+                <h4 class="font-bold text-slate-800 text-base leading-tight mb-1 group-hover:text-primary transition-colors">{{ book.title }}</h4>
+                <p class="text-xs text-slate-400 font-medium italic">by {{ book.author }}</p>
+                
+                <div class="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center">
+                    <a href="{% url 'library:book_detail' book.id %}" class="text-[10px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors flex items-center gap-2">
+                        View Public Page <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+            <i class="fa-solid fa-box-open text-6xl text-slate-200 mb-4"></i>
+            <h3 class="text-xl font-bold text-slate-400">Inventory is Empty</h3>
+            <p class="text-slate-400 text-sm">Start adding your first book to the collection.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>

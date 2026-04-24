@@ -46,7 +46,10 @@ class LibrarianProfile(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    fine_per_day = models.PositiveIntegerField(default=1000) # Pake PositiveIntegerField biar gak ada denda minus
+    
+    # 🌟 DUA FIELD SAKTI PENGATUR ATURAN (Pake PositiveIntegerField)
+    loan_duration_days = models.PositiveIntegerField(default=7, help_text="Maksimal hari peminjaman untuk kategori ini")
+    fine_per_day = models.PositiveIntegerField(default=1000, help_text="Tarif denda per hari jika telat")
 
     class Meta:
         verbose_name = "Category"
@@ -75,6 +78,14 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+    
+    @property
+    def total_stock(self):
+        return self.items.count()
+    
+    @property
+    def available_stock(self):
+        return self.items.filter(status='available').count()
 
 
 # 3. PHYSICAL INVENTORY (ITEMS)

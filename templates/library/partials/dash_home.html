@@ -89,30 +89,120 @@
         </div>
         
         <div class="flex-1 flex flex-col gap-4">
-            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                <div class="w-12 h-16 bg-slate-200 rounded shadow-sm flex items-center justify-center overflow-hidden">
-                    <i class="fa-solid fa-book text-slate-400"></i>
+            {% for book in recent_additions %}
+                <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+                    <div class="w-12 h-16 bg-slate-200 rounded shadow-sm flex items-center justify-center overflow-hidden">
+                        {% if book.cover_image %}
+                            <img src="{{ book.cover_image.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <i class="fa-solid fa-book text-slate-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-slate-800 line-clamp-1">{{ book.title }}</h4>
+                        <p class="text-xs text-slate-400 mt-1">{{ book.author }}</p>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <h4 class="text-sm font-bold text-slate-800 line-clamp-1">The Pragmatic Programmer</h4>
-                    <p class="text-xs text-slate-400 mt-1">David Thomas</p>
+            {% empty %}
+                <div class="flex-1 flex flex-col items-center justify-center text-slate-400 py-6">
+                    <i class="fa-solid fa-inbox text-2xl mb-2 opacity-50"></i>
+                    <p class="text-xs font-medium">No new books.</p>
                 </div>
-            </div>
-            
-            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                <div class="w-12 h-16 bg-slate-200 rounded shadow-sm flex items-center justify-center overflow-hidden">
-                    <i class="fa-solid fa-book text-slate-400"></i>
-                </div>
-                <div class="flex-1">
-                    <h4 class="text-sm font-bold text-slate-800 line-clamp-1">Atomic Habits</h4>
-                    <p class="text-xs text-slate-400 mt-1">James Clear</p>
-                </div>
-            </div>
-
-            <div class="hidden flex-1 flex-col items-center justify-center text-slate-400">
-                <i class="fa-solid fa-inbox text-2xl mb-2 opacity-50"></i>
-                <p class="text-xs font-medium">No new books.</p>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
+
+{% if user.role == 'librarian' or user.role == 'admin' or user.is_staff %}
+<div class="mt-8 space-y-8">
+    
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-orange-50/30">
+            <h3 class="font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-bell-concierge text-orange-500 mr-2"></i> Pending Approvals
+            </h3>
+            <span class="px-2.5 py-1 bg-orange-100 text-orange-600 text-xs font-bold rounded-lg">Action Required</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Student</th>
+                        <th class="px-6 py-4">Book Code</th>
+                        <th class="px-6 py-4">Request Date</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for loan in pending_loans %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-700">{{ loan.user.username }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ loan.book_item.book_code }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ loan.borrow_date|date:"d M Y" }}</td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            <a href="{% url 'library:process_borrow' loan.id 'approve' %}" class="inline-flex items-center px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-all">
+                                <i class="fa-solid fa-check mr-1"></i> Approve
+                            </a>
+                            <a href="{% url 'library:process_borrow' loan.id 'reject' %}" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                                <i class="fa-solid fa-xmark mr-1"></i> Reject
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-10 text-center text-slate-400 italic text-sm">No pending requests. Great job!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 bg-blue-50/30">
+            <h3 class="font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-primary mr-2"></i> Active Loans
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Borrower</th>
+                        <th class="px-6 py-4">Book</th>
+                        <th class="px-6 py-4">Due Date</th>
+                        <th class="px-6 py-4 text-right">Process Return</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for loan in active_loans %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-700">{{ loan.user.username }}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-800">{{ loan.book_item.book.title }}</p>
+                            <p class="text-[10px] text-slate-400 uppercase">{{ loan.book_item.book_code }}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm {% if loan.due_date < now %}text-red-500 font-bold{% else %}text-slate-500{% endif %}">
+                            {{ loan.due_date|date:"d M Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <form action="{% url 'library:return_book' loan.id %}" method="POST" class="inline-flex gap-2">
+                                {% csrf_token %}
+                                <select name="condition" class="text-xs border rounded-lg px-2 py-1 outline-none">
+                                    <option value="good">Good</option>
+                                    <option value="slightly_damaged">Slightly Damaged</option>
+                                    <option value="damaged">Damaged</option>
+                                </select>
+                                <button type="submit" class="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all">
+                                    Return
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}

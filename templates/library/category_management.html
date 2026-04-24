@@ -1,0 +1,57 @@
+{% extends 'base_dashboard.html' %}
+{% block content %}
+<div class="space-y-8">
+    <div class="flex justify-between items-center bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+        <div>
+            <h2 class="text-3xl font-black text-slate-800 tracking-tighter">Category Rules</h2>
+            <p class="text-slate-500 text-sm mt-1">Manage book categories, loan durations, and fine rates.</p>
+        </div>
+        <a href="{% url 'library:category_add' %}" class="bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add Category
+        </a>
+    </div>
+
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest border-b border-slate-100">
+                <tr>
+                    <th class="px-8 py-5">Category Name</th>
+                    <th class="px-8 py-5 text-center">Max Loan Duration</th>
+                    <th class="px-8 py-5 text-center">Fine Per Day</th>
+                    <th class="px-8 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for cat in categories %}
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-8 py-5 font-bold text-slate-800">{{ cat.name }}</td>
+                    <td class="px-8 py-5 text-center">
+                        <span class="px-3 py-1 bg-blue-50 text-primary font-black rounded-lg text-xs">{{ cat.loan_duration_days }} Days</span>
+                    </td>
+                    <td class="px-8 py-5 text-center">
+                        <span class="px-3 py-1 bg-red-50 text-red-500 font-black rounded-lg text-xs">Rp {{ cat.fine_per_day }}</span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a href="{% url 'library:category_edit' cat.id %}" class="w-8 h-8 bg-slate-100 text-slate-400 hover:text-primary rounded-lg flex items-center justify-center transition-colors">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <form action="{% url 'library:category_delete' cat.id %}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
+                                {% csrf_token %}
+                                <button type="submit" class="w-8 h-8 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-lg flex items-center justify-center transition-colors">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-8 py-16 text-center text-slate-400 font-medium">No categories configured yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

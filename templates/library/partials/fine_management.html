@@ -1,0 +1,204 @@
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Fine Management</h2>
+            <p class="text-slate-500 text-sm">Process and monitor fines for late returns.</p>
+        </div>
+        
+        <div class="relative w-full sm:w-72 group">
+            <input type="text" name="q" 
+                   hx-get="{% url 'library:fine_management' %}" 
+                   hx-trigger="keyup changed delay:500ms" 
+                   hx-target="#fine-container" 
+                   hx-select="#fine-container" 
+                   hx-swap="outerHTML" 
+                   placeholder="Search user, title, or barcode..." 
+                   class="w-full bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary block pl-10 p-2.5 transition-all shadow-sm">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-primary transition-colors"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="fine-container" class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-red-50 text-red-700 uppercase text-[10px] font-black tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Borrower</th>
+                        <th class="px-6 py-4">Book Returned</th>
+                        <th class="px-6 py-4">Penalty Info</th>
+                        <th class="px-6 py-4">Total Fine</th>
+                        <th class="px-6 py-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for record in fines %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-700">
+                            {{ record.borrowing.user.username }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-800">{{ record.borrowing.book_item.book.title }}</p>
+                            <p class="text-[10px] text-slate-400 font-mono uppercase">{{ record.borrowing.book_item.book_code }}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <ul class="text-xs text-slate-500 space-y-1">
+                                <li>Late: <strong class="text-red-500">{{ record.late_days }} Days</strong></li>
+                                <li>Condition: <strong class="capitalize">{{ record.return_condition }}</strong></li>
+                            </ul>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col items-start gap-1">
+                                <span class="px-3 py-1.5 {% if record.fine_status == 'paid' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-600{% endif %} font-black rounded-lg text-sm">
+                                    Rp {{ record.total_fine }}
+                                </span>
+                                {% if record.fine_status == 'paid' %}
+                                    <span class="text-[9px] font-black text-green-600 uppercase tracking-widest"><i class="fa-solid fa-check-circle mr-1"></i> Paid</span>
+                                {% else %}
+                                    <span class="text-[9px] font-black text-red-500 uppercase tracking-widest animate-pulse"><i class="fa-solid fa-clock mr-1"></i> Unpaid</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 text-right">
+                            {% if record.fine_status == 'unpaid' %}
+                                <button type="button" onclick="openPaymentModal('{{ record.id }}')" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-200 flex items-center gap-2 ml-auto">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i> Process Payment
+                                </button>
+
+                                <div id="paymentModal-{{ record.id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0 text-left">
+                                    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closePaymentModal('{{ record.id }}')"></div>
+                                    
+                                    <div class="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden transform transition-all flex flex-col">
+                                        
+                                        <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+                                            <div>
+                                                <h3 class="font-black text-xl tracking-tight">Payment Checkout</h3>
+                                                <p class="text-slate-400 text-xs mt-1">Verify payment details before processing</p>
+                                            </div>
+                                            <button type="button" onclick="closePaymentModal('{{ record.id }}')" class="w-8 h-8 bg-slate-800 hover:bg-red-500 rounded-xl flex items-center justify-center transition-colors">
+                                                <i class="fa-solid fa-xmark text-white"></i>
+                                            </button>
+                                        </div>
+
+                                        <form action="{% url 'library:pay_fine' record.id %}" method="POST" class="p-8 flex flex-col gap-6" data-hx-boost="false">
+                                            {% csrf_token %}
+                                            
+                                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                                                <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Borrower</span>
+                                                    <span class="text-sm font-black text-slate-800">@{{ record.borrowing.user.username }}</span>
+                                                </div>
+                                                <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Late Penalty</span>
+                                                    <span class="text-sm font-black text-amber-600">{{ record.late_days }} Days</span>
+                                                </div>
+                                                <div class="flex justify-between items-center pt-1">
+                                                    <span class="text-xs font-black text-slate-800 uppercase tracking-widest">Total Amount</span>
+                                                    <span class="text-2xl font-black text-primary">Rp {{ record.total_fine }}</span>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Select Payment Method</label>
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <label class="cursor-pointer">
+                                                        <input type="radio" name="payment_method" value="cash" class="peer sr-only" checked onchange="togglePaymentAlert('{{ record.id }}', 'cash')">
+                                                        <div class="p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-primary peer-checked:bg-blue-50 hover:bg-slate-50 transition-all text-center">
+                                                            <i class="fa-solid fa-money-bill-wave text-xl text-emerald-500 mb-2"></i>
+                                                            <h6 class="font-bold text-slate-800 text-sm">Cash</h6>
+                                                            <p class="text-[10px] text-slate-500 font-medium">Pay at counter</p>
+                                                        </div>
+                                                    </label>
+
+                                                    <label class="cursor-pointer">
+                                                        <input type="radio" name="payment_method" value="qris" class="peer sr-only" onchange="togglePaymentAlert('{{ record.id }}', 'qris')">
+                                                        <div class="p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-primary peer-checked:bg-blue-50 hover:bg-slate-50 transition-all text-center relative overflow-hidden">
+                                                            <div class="absolute top-0 right-0 bg-amber-400 text-white text-[8px] font-black px-2 py-0.5 rounded-bl-lg tracking-widest uppercase">Soon</div>
+                                                            <i class="fa-solid fa-qrcode text-xl text-blue-500 mb-2"></i>
+                                                            <h6 class="font-bold text-slate-800 text-sm">QRIS / Bank</h6>
+                                                            <p class="text-[10px] text-slate-500 font-medium">Digital Payment</p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div id="alert-{{ record.id }}" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-3">
+                                                <i class="fa-solid fa-person-digging text-amber-500 mt-0.5"></i>
+                                                <p class="text-xs text-amber-700 font-medium"><strong>Digital Gateway Offline.</strong> We are currently integrating Midtrans for online payments. Please use Cash for now.</p>
+                                            </div>
+
+                                            <div class="flex gap-3 pt-4 border-t border-slate-100">
+                                                <button type="button" onclick="closePaymentModal('{{ record.id }}')" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest transition-all">Cancel</button>
+                                                <button type="submit" id="btn-submit-{{ record.id }}" class="flex-[2] py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2">
+                                                    <i class="fa-solid fa-check"></i> Mark as Paid
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="px-4 py-2 bg-slate-50 text-slate-400 rounded-xl text-xs font-bold border border-slate-100 flex items-center gap-2 w-fit ml-auto cursor-not-allowed">
+                                    <i class="fa-solid fa-check-double text-green-500"></i> Settled
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fa-solid fa-face-laugh-beam text-4xl text-green-300 mb-3"></i>
+                                <p class="text-slate-500 font-bold">Yeay! No fines recorded.</p>
+                                <p class="text-slate-400 text-xs">All records are clean.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fungsi Buka Modal
+    function openPaymentModal(recordId) {
+        document.getElementById(`paymentModal-${recordId}`).classList.remove('hidden');
+    }
+
+    // Fungsi Tutup Modal
+    function closePaymentModal(recordId) {
+        document.getElementById(`paymentModal-${recordId}`).classList.add('hidden');
+        
+        // Reset form ke Cash lagi pas ditutup
+        const form = document.querySelector(`#paymentModal-${recordId} form`);
+        form.reset();
+        togglePaymentAlert(recordId, 'cash');
+    }
+
+    // Fungsi Logika "Coming Soon"
+    function togglePaymentAlert(recordId, method) {
+        const alertBox = document.getElementById(`alert-${recordId}`);
+        const submitBtn = document.getElementById(`btn-submit-${recordId}`);
+
+        if (method === 'qris') {
+            // Munculin alert, matikan tombol submit, ganti warna jadi abu-abu
+            alertBox.classList.remove('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.replace('bg-emerald-500', 'bg-slate-300');
+            submitBtn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-300');
+            submitBtn.classList.replace('shadow-emerald-200', 'shadow-none');
+            submitBtn.innerHTML = '<i class="fa-solid fa-ban"></i> Gateway Offline';
+        } else {
+            // Sembunyiin alert, nyalain tombol submit lagi
+            alertBox.classList.add('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.replace('bg-slate-300', 'bg-emerald-500');
+            submitBtn.classList.replace('hover:bg-slate-300', 'hover:bg-emerald-600');
+            submitBtn.classList.replace('shadow-none', 'shadow-emerald-200');
+            submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Mark as Paid';
+        }
+    }
+</script>

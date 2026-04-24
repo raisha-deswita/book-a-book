@@ -1,0 +1,168 @@
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Loan Management</h2>
+            <p class="text-slate-500 text-sm">Monitor and process all book transactions.</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div class="relative w-full sm:w-72 group">
+                <input type="text" name="q" 
+                       hx-get="{% url 'library:loan_management' %}" 
+                       hx-trigger="keyup changed delay:500ms" 
+                       hx-target="#loan-container" 
+                       hx-select="#loan-container" 
+                       hx-swap="outerHTML" 
+                       placeholder="Search user, title, or barcode..." 
+                       class="w-full bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary block pl-10 p-2.5 transition-all shadow-sm">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-primary transition-colors"></i>
+                </div>
+            </div>
+
+            <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all flex items-center justify-center whitespace-nowrap">
+                <i class="fa-solid fa-download mr-2"></i> Export Report
+            </button>
+        </div>
+    </div>
+
+    <div id="loan-container" class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Borrower</th>
+                        <th class="px-6 py-4">Book Details</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Due Date</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for loan in loans %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center font-bold text-xs">
+                                    {{ loan.user.username|make_list|first|upper }}
+                                </div>
+                                <span class="font-bold text-slate-700">{{ loan.user.username }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-800">{{ loan.book_item.book.title }}</p>
+                            <p class="text-[10px] text-slate-400 font-mono uppercase">{{ loan.book_item.book_code }}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if loan.status == 'pending' %}
+                                <span class="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-black rounded-lg uppercase tracking-tighter italic">Pending Approval</span>
+                            {% elif loan.status == 'active' %}
+                                <span class="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-tighter">Borrowed</span>
+                            {% elif loan.status == 'returned' %}
+                                <span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded-lg uppercase tracking-tighter">Returned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium {% if loan.status == 'active' and loan.due_date < now %}text-red-500{% else %}text-slate-600{% endif %}">
+                                    {{ loan.due_date|date:"d M Y" }}
+                                </span>
+                                {% if loan.status == 'active' and loan.due_date < now %}
+                                    <span class="text-[9px] font-bold text-red-400 uppercase tracking-tighter animate-pulse">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Overdue
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if user.role == 'librarian' or user.is_staff %}
+                                {% if loan.status == 'pending' %}
+                                    <div class="flex justify-end gap-2">
+                                        <a href="{% url 'library:process_borrow' loan.id 'approve' %}" class="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-lg shadow-green-200">
+                                            <i class="fa-solid fa-check"></i>
+                                        </a>
+                                        <a href="{% url 'library:process_borrow' loan.id 'reject' %}" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </a>
+                                    </div>
+                                {% elif loan.status == 'active' %}
+                                    <button type="button" onclick="document.getElementById('returnModal-{{ loan.id }}').classList.remove('hidden')" class="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all shadow-md">
+                                        Process Return
+                                    </button>
+
+                                    <div id="returnModal-{{ loan.id }}" class="hidden fixed inset-0 z-[99] flex items-center justify-center p-4">
+                                        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="document.getElementById('returnModal-{{ loan.id }}').classList.add('hidden')"></div>
+                                        
+                                        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden text-left z-10">
+                                            <div class="bg-slate-800 p-5 text-center">
+                                                <h3 class="text-lg font-black text-white">Return Book</h3>
+                                                <p class="text-slate-400 text-xs mt-1">Returning from: <span class="text-white">{{ loan.user.username }}</span></p>
+                                            </div>
+
+                                            <form action="{% url 'library:return_book' loan.id %}" method="POST" class="p-6">
+                                                {% csrf_token %}
+                                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
+                                                    <p class="text-sm font-bold text-slate-800 mb-3">{{ loan.book_item.book.title }}</p>
+                                                    
+                                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Book Condition</label>
+                                                    <select name="condition" class="w-full text-sm border-slate-200 rounded-xl bg-white focus:ring-primary focus:border-primary">
+                                                        <option value="good">🟢 Good (Aman)</option>
+                                                        <option value="damaged">🟠 Damaged (Rusak)</option>
+                                                        <option value="lost">🔴 Lost (Hilang)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex gap-2">
+                                                    <button type="button" onclick="document.getElementById('returnModal-{{ loan.id }}').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">Cancel</button>
+                                                    <button type="submit" class="flex-1 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl font-bold text-sm transition-all">Confirm Return</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                {% elif loan.status == 'returned' %}
+                                    <div class="bg-green-50 border border-green-100 rounded-xl p-3 text-left w-full">
+                                        <div class="flex justify-between items-center mb-2 border-b border-green-200 pb-2">
+                                            <span class="text-[10px] font-black text-green-700 uppercase tracking-widest"><i class="fa-solid fa-check-double mr-1"></i> Completed</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between items-center text-xs mt-1">
+                                            <span class="text-slate-500 font-medium">Condition:</span>
+                                            <span class="font-bold text-slate-700 capitalize">{{ loan.returnrecord.return_condition }}</span> 
+                                        </div>
+                                        
+                                        <div class="flex justify-between items-center text-xs mt-1">
+                                            <span class="text-slate-500 font-medium">Fine Status:</span>
+                                            <span class="font-bold {% if loan.returnrecord.total_fine > 0 %}text-red-500{% else %}text-green-600{% endif %}">
+                                                {% if loan.returnrecord.total_fine > 0 %}
+                                                    Rp {{ loan.returnrecord.total_fine }}
+                                                {% else %}
+                                                    Clear
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                {% else %}
+                                    <span class="text-xs text-slate-300 italic">No action needed</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-xs text-slate-400">Waiting for Updates</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fa-solid fa-folder-open text-4xl text-slate-200 mb-3"></i>
+                                <p class="text-slate-400 text-sm">No transaction records found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
