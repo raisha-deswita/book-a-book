@@ -25,7 +25,7 @@ Secure system with distinct privileges for different user types:
 * **Healthy Friction UX:** Borrowers must explicitly agree to library rules via a commitment form before placing a request.
 * **Automated Fine Snapshots:** Penalty rates are locked at the time of borrowing, ensuring financial data integrity even if global penalty rules change in the future.
 
-### ⚡ 4. Blazing Fast UI with HTMX
+### ⚡ 4. Fast UI with HTMX
 * **Live Search Capabilities:** Search through Catalogue, Inventory, Loans, and Fines instantly without reloading the page, utilizing HTMX and Django `Q` objects.
 * **Seamless Dashboard Rendering:** Partial rendering for sidebar navigation to eliminate jarring page reloads.
 
