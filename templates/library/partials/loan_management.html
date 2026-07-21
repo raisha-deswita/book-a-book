@@ -20,9 +20,11 @@
                 </div>
             </div>
 
+            {% if user.is_superuser or user.role == 'librarian' or user.is_staff %}
             <a href="{% url 'library:export_loans' %}" data-hx-boost="false" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all flex items-center justify-center whitespace-nowrap shadow-sm">
                 <i class="fa-solid fa-download mr-2"></i> Export Report
             </a>
+            {% endif %}
         </div>
     </div>
 
